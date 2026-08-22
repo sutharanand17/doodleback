@@ -592,12 +592,17 @@ function render() {
     g.appendChild(textG);
     
     // Comment badge
-    let openCount = 0;
+    let hasComments = false;
     for (const c of Object.values(board.comments)) {
-      if (c.nodeId === id && c.state === 'OPEN') openCount++;
+      if (c.nodeId === id) {
+        hasComments = true;
+        break;
+      }
     }
     
-    if (openCount > 0 || isSelected) {
+    const isOpen = node.commentState === 'OPEN' || (!node.commentState && hasComments);
+    
+    if ((hasComments && isOpen) || isSelected) {
       const badgeX = node.width - 12;
       const badgeY = 12;
       

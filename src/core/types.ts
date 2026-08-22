@@ -39,6 +39,7 @@ export interface BoardNode extends RevisionedRecord {
   height: number;
   zIndex: number;
   text: string;
+  commentState?: CommentState;
   deleted: boolean;
 }
 
@@ -52,7 +53,6 @@ export interface BoardComment extends RevisionedRecord {
   nodeId: string;
   author: Actor;
   text: string;
-  state: CommentState;
   createdAt: string;
   updatedAt: string;
 }

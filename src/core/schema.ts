@@ -72,13 +72,16 @@ export function validateBoard(data: unknown): BoardDocument {
     maxNodeId = Math.max(maxNodeId, extractIdNumber(id));
 
     if (!isObject(node)) throw new Error(`Node ${id} is not an object`);
+    if (typeof node.text !== 'string') throw new Error('Node text must be string');
+    if (node.commentState !== undefined && !['OPEN', 'ACCEPTED', 'APPLIED', 'CLOSED', 'REJECTED', 'DEFERRED'].includes(node.commentState)) {
+      throw new Error('Invalid node commentState');
+    }
+    if (typeof node.deleted !== 'boolean') throw new Error('Node deleted must be boolean');
     if (node.type !== 'rectangle') throw new Error(`Node ${id} invalid type`);
     if (!isNumber(node.x) || !isNumber(node.y)) throw new Error(`Node ${id} invalid coordinates`);
     if (!isNumber(node.width) || node.width <= 0) throw new Error(`Node ${id} invalid width`);
     if (!isNumber(node.height) || node.height <= 0) throw new Error(`Node ${id} invalid height`);
     if (!isNumber(node.zIndex)) throw new Error(`Node ${id} invalid zIndex`);
-    if (!isString(node.text)) throw new Error(`Node ${id} invalid text`);
-    if (!isBoolean(node.deleted)) throw new Error(`Node ${id} invalid deleted flag`);
 
     validateRevision(node, data.revision, `Node ${id}`);
   }
@@ -110,12 +113,9 @@ export function validateBoard(data: unknown): BoardDocument {
     if (!isString(comment.nodeId) || !nodes[comment.nodeId]) {
       throw new Error(`Comment ${id} references unknown nodeId`);
     }
-    if (!isActor(comment.author)) throw new Error(`Comment ${id} invalid author`);
-    if (!isString(comment.text) || comment.text.trim().length === 0) {
-      throw new Error(`Comment ${id} text is empty or whitespace-only`);
-    }
-    if (!isCommentState(comment.state)) throw new Error(`Comment ${id} invalid state`);
-    if (!isString(comment.createdAt)) throw new Error(`Comment ${id} invalid createdAt`);
+    if (typeof comment.author !== 'string') throw new Error('Comment author must be string');
+    if (typeof comment.text !== 'string') throw new Error('Comment text must be string');
+    if (typeof comment.createdAt !== 'string') throw new Error('Comment createdAt must be string');
     if (!isString(comment.updatedAt)) throw new Error(`Comment ${id} invalid updatedAt`);
 
     validateRevision(comment, data.revision, `Comment ${id}`);

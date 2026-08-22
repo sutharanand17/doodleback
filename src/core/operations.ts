@@ -37,7 +37,7 @@ export function addNode(board: BoardDocument, node: Omit<BoardNode, 'createdRevi
   return id;
 }
 
-export function updateNode(board: BoardDocument, id: string, updates: Partial<Pick<BoardNode, 'x' | 'y' | 'width' | 'height' | 'zIndex' | 'text' | 'deleted'>>) {
+export function updateNode(board: BoardDocument, id: string, updates: Partial<Pick<BoardNode, 'x' | 'y' | 'width' | 'height' | 'zIndex' | 'text' | 'deleted' | 'commentState'>>) {
   if (!board.nodes[id]) throw new Error(`Node ${id} not found`);
   Object.assign(board.nodes[id], updates);
 }
@@ -113,8 +113,7 @@ export function commitHumanChanges(board: BoardDocument, dirtyRecordIds: { nodes
 export function addComment(board: BoardDocument, nodeId: string, text: string, author: Actor): string {
   if (!board.nodes[nodeId]) throw new Error(`Node ${nodeId} not found`);
   const id = `c${board.nextIds.comment++}`;
-  const rev = bumpRevision(board, author);
-  const now = board.modifiedAt;
+  const now = new Date().toISOString();
   
   board.comments[id] = {
     nodeId,
@@ -123,10 +122,11 @@ export function addComment(board: BoardDocument, nodeId: string, text: string, a
     state: 'OPEN',
     createdAt: now,
     updatedAt: now,
-    createdRevision: rev,
-    updatedRevision: rev,
+    createdRevision: board.revision,
+    updatedRevision: board.revision,
     updatedBy: author,
   };
+  board.revision++;
   return id;
 }
 

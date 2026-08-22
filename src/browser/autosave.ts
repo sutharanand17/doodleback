@@ -1,5 +1,5 @@
 import { BoardDocument } from '../core/types.js';
-import { saveFile } from './file-store.js';
+import { saveFile, hasActiveFile } from './file-store.js';
 
 type SaveCallback = () => void;
 type ErrorCallback = (err: any) => void;
@@ -13,6 +13,7 @@ let boardRef: BoardDocument | null = null;
 let onSaveStart: SaveCallback = () => {};
 let onSaveSuccess: SaveCallback = () => {};
 let onSaveError: ErrorCallback = () => {};
+let onRequiresFirstSave: SaveCallback = () => {};
 
 export function setAutosaveEnabled(enabled: boolean) {
   autosaveEnabled = enabled;
@@ -27,10 +28,11 @@ export function isAutosaveEnabled() {
   return autosaveEnabled;
 }
 
-export function initAutosave(callbacks: { start: SaveCallback, success: SaveCallback, error: ErrorCallback }) {
+export function initAutosave(callbacks: { start: SaveCallback, success: SaveCallback, error: ErrorCallback, requiresFirstSave: SaveCallback }) {
   onSaveStart = callbacks.start;
   onSaveSuccess = callbacks.success;
   onSaveError = callbacks.error;
+  onRequiresFirstSave = callbacks.requiresFirstSave;
   isAutosaveEnabled(); // initialize from local storage
 }
 
@@ -55,6 +57,11 @@ async function executeSave() {
   }
 
   if (!boardRef) return;
+  
+  if (!(await hasActiveFile())) {
+    onRequiresFirstSave();
+    return;
+  }
   
   isSaving = true;
   onSaveStart();

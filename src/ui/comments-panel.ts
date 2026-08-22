@@ -1,5 +1,5 @@
 import { BoardDocument, BoardNode, CommentState } from '../core/types.js';
-import { addComment, updateCommentState } from '../core/operations.js';
+import { addComment, updateNode } from '../core/operations.js';
 
 type StateChangeCallback = () => void;
 
@@ -16,6 +16,25 @@ export function initCommentsPanel(board: BoardDocument, changeCallback: StateCha
   
   btnClose?.addEventListener('click', closePanel);
   btnAdd?.addEventListener('click', handleAddComment);
+  
+  const threadSelect = document.getElementById('thread-state-select') as HTMLSelectElement;
+  if (threadSelect) {
+    const states: CommentState[] = ['OPEN', 'ACCEPTED', 'APPLIED', 'CLOSED', 'REJECTED', 'DEFERRED'];
+    for (const s of states) {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      threadSelect.appendChild(opt);
+    }
+    
+    threadSelect.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      if (currentBoard && currentNodeId) {
+        updateNode(currentBoard, currentNodeId, { commentState: target.value as CommentState });
+        onChange();
+      }
+    });
+  }
 }
 
 export function openPanelForNode(nodeId: string, node: BoardNode) {
@@ -28,6 +47,11 @@ export function openPanelForNode(nodeId: string, node: BoardNode) {
     const text = node.text || '(empty)';
     const firstLine = text.split('\n')[0].trim();
     label.textContent = firstLine.length > 100 ? firstLine.slice(0, 100) : firstLine;
+  }
+  
+  const threadSelect = document.getElementById('thread-state-select') as HTMLSelectElement;
+  if (threadSelect) {
+    threadSelect.value = node.commentState || 'OPEN';
   }
   
   renderComments();
@@ -79,38 +103,8 @@ function renderComments() {
     text.className = 'comment-text';
     text.textContent = c.text;
     
-    const stateRow = document.createElement('div');
-    stateRow.className = 'comment-state';
-    
-    const stateLabel = document.createElement('span');
-    stateLabel.style.fontSize = '11px';
-    stateLabel.textContent = 'State:';
-    
-    const select = document.createElement('select');
-    const states: CommentState[] = ['OPEN', 'ACCEPTED', 'APPLIED', 'CLOSED', 'REJECTED', 'DEFERRED'];
-    for (const s of states) {
-      const opt = document.createElement('option');
-      opt.value = s;
-      opt.textContent = s;
-      if (c.state === s) opt.selected = true;
-      select.appendChild(opt);
-    }
-    
-    select.addEventListener('change', (e) => {
-      const target = e.target as HTMLSelectElement;
-      if (currentBoard) {
-        updateCommentState(currentBoard, id, target.value as CommentState, 'human');
-        onChange();
-        // Do not re-render immediately, let app state flow
-      }
-    });
-    
-    stateRow.appendChild(stateLabel);
-    stateRow.appendChild(select);
-    
     item.appendChild(meta);
     item.appendChild(text);
-    item.appendChild(stateRow);
     
     list.appendChild(item);
   }

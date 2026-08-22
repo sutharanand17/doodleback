@@ -34,7 +34,8 @@ export function initApp() {
         updateStatus('Save failed', 'error');
         console.error(err);
       }
-    }
+    },
+    requiresFirstSave: handleRequiresFirstSave
   });
 
   setupToolbar();
@@ -118,6 +119,51 @@ async function handleSaveCopy() {
       alert('Save as copy failed: ' + err.message);
     }
   }
+}
+
+function handleRequiresFirstSave() {
+  const dialog = document.getElementById('doodle-dialog') as HTMLDialogElement;
+  if (!dialog) return;
+  
+  dialog.showModal();
+  
+  const btnDoodle = document.getElementById('btn-doodle-doodle');
+  const btnSave = document.getElementById('btn-doodle-save');
+  
+  const cleanup = () => {
+    btnDoodle?.removeEventListener('click', onDoodle);
+    btnSave?.removeEventListener('click', onSave);
+    dialog.close();
+  };
+  
+  const onDoodle = () => {
+    cleanup();
+    const toggle = document.getElementById('toggle-autosave') as HTMLInputElement;
+    if (toggle) toggle.checked = false;
+    setAutosaveEnabled(false);
+    updateStatus('Autosave paused');
+  };
+  
+  const onSave = async () => {
+    cleanup();
+    try {
+      updateStatus('Saving…');
+      await saveFile(board, false);
+      updateStatus('Saved', 'success');
+      scheduleAutosave(board); // kick off autosave again
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        updateStatus('Save failed', 'error');
+        alert('Failed to save: ' + err.message);
+      } else {
+        // user cancelled save picker, treat as doodle
+        onDoodle();
+      }
+    }
+  };
+  
+  btnDoodle?.addEventListener('click', onDoodle);
+  btnSave?.addEventListener('click', onSave);
 }
 
 function setupToolbar() {

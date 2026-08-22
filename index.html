@@ -7,6 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Doodleback</title>
   <link rel="stylesheet" href="/src/styles.css" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EYE82Z7KGR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-EYE82Z7KGR');
+  </script>
 </head>
 
 <body>
@@ -43,6 +52,11 @@
           <div id="comments-node-label" class="node-label-trunc"></div>
           <button id="btn-close-comments" class="btn-icon" aria-label="Close comments">×</button>
         </div>
+        <div class="comments-thread-state" id="comments-thread-state"
+          style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+          <span>Thread State:</span>
+          <select id="thread-state-select" style="font-size: 13px;"></select>
+        </div>
         <div class="comments-list" id="comments-list"></div>
         <div class="comments-compose">
           <textarea id="comment-input" placeholder="Add comment..."></textarea>
@@ -61,6 +75,14 @@
     <div class="dialog-actions">
       <button id="btn-conflict-reload" class="btn-danger">Reload from disk</button>
       <button id="btn-conflict-copy" class="btn-primary">Save as Copy</button>
+    </div>
+  </dialog>
+  <dialog id="doodle-dialog">
+    <h2>Unsaved Whiteboard</h2>
+    <p>You have unsaved changes. Do you want to save this file to keep it, or are you just doodling around?</p>
+    <div class="dialog-actions">
+      <button id="btn-doodle-doodle" class="btn-danger">Just Doodling</button>
+      <button id="btn-doodle-save" class="btn-primary">Save File</button>
     </div>
   </dialog>
   <script type="module" src="/src/main.ts"></script>

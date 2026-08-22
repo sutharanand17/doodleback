@@ -4,7 +4,7 @@ import * as crypto from 'crypto';
 import { validateBoard } from '../src/core/schema.js';
 import { serializeBoard } from '../src/core/serialize.js';
 import { getOverview, getPendingChanges, getContext, searchNodes } from '../src/core/queries.js';
-import { addComment, updateCommentState, completeReview } from '../src/core/operations.js';
+import { addComment, updateNode, completeReview } from '../src/core/operations.js';
 import { CommentState } from '../src/core/types.js';
 
 function printHelp() {
@@ -19,7 +19,7 @@ Commands:
   search FILE QUERY                   Search active node text.
   comment add FILE NODE_ID --text "T" Add a comment to a node.
   comment add FILE NODE_ID --text-file P Add a comment from a file.
-  comment state FILE COMMENT_ID STATE Change comment state.
+  comment state FILE NODE_ID STATE Change node comment state.
   review complete FILE --through N    Advance the review cursor to revision N.
   `);
 }
@@ -142,16 +142,25 @@ async function main() {
         output({ commentId, revision: board.revision }, pretty);
         
       } else if (subCmd === 'state') {
-        const commentId = cleanArgs[3];
+        const nodeId = cleanArgs[3];
         const state = cleanArgs[4] as CommentState;
-        if (!commentId || !state) throw new Error('Missing COMMENT_ID or STATE');
+        if (!nodeId || !state) throw new Error('Missing NODE_ID or STATE');
         
         const { board, baseHash } = await loadAndValidate(file);
-        updateCommentState(board, commentId, state, 'model');
+        if (!board.nodes[nodeId]) throw new Error('Node not found');
+        
+        board.revision++;
+        board.modifiedAt = new Date().toISOString();
+        board.modifiedBy = 'model';
+        
+        board.nodes[nodeId].commentState = state;
+        board.nodes[nodeId].updatedRevision = board.revision;
+        board.nodes[nodeId].updatedBy = 'model';
+        
         const newBoardStr = serializeBoard(board);
         validateBoard(JSON.parse(newBoardStr));
         await writeSafely(file, baseHash, newBoardStr);
-        output({ commentId, revision: board.revision }, pretty);
+        output({ nodeId, revision: board.revision }, pretty);
         
       } else {
         throw new Error(`Unknown comment sub-command: ${subCmd}`);
