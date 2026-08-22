@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "documentId": "18db99bf-78af-4c25-a61b-f42044a59a47",
+  "revision": 3,
+  "modifiedAt": "2026-08-22T08:00:00.000Z",
+  "modifiedBy": "model",
+  "lastReviewedRevision": 2,
+  "nextIds": {
+    "node": 3,
+    "connector": 2,
+    "comment": 2
+  },
+  "nodes": {
+    "n1": {
+      "type": "rectangle",
+      "x": 120,
+      "y": 100,
+      "width": 240,
+      "height": 120,
+      "zIndex": 1,
+      "text": "Authentication\nValidates the user session",
+      "deleted": false,
+      "createdRevision": 1,
+      "updatedRevision": 1,
+      "updatedBy": "human"
+    },
+    "n2": {
+      "type": "rectangle",
+      "x": 520,
+      "y": 100,
+      "width": 240,
+      "height": 120,
+      "zIndex": 2,
+      "text": "Token service",
+      "deleted": false,
+      "createdRevision": 1,
+      "updatedRevision": 1,
+      "updatedBy": "human"
+    }
+  },
+  "connectors": {
+    "e1": {
+      "sourceNodeId": "n1",
+      "targetNodeId": "n2",
+      "deleted": false,
+      "createdRevision": 2,
+      "updatedRevision": 2,
+      "updatedBy": "human"
+    }
+  },
+  "comments": {
+    "c1": {
+      "nodeId": "n1",
+      "author": "model",
+      "text": "Clarify how expired tokens are handled.",
+      "state": "OPEN",
+      "createdAt": "2026-08-22T08:00:00.000Z",
+      "updatedAt": "2026-08-22T08:00:00.000Z",
+      "createdRevision": 3,
+      "updatedRevision": 3,
+      "updatedBy": "model"
+    }
+  }
+}

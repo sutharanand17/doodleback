@@ -1,0 +1,320 @@
+:root {
+  --bg-app: #f8fafc;
+  --bg-canvas: #f1f5f9;
+  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --node-border: #64748b;
+  --node-selected: #2563eb;
+}
+
+* { box-sizing: border-box; }
+
+body, html {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 48px;
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-brand {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-actions button {
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.toolbar-actions button:hover {
+  background: var(--bg-canvas);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 8px;
+}
+
+.autosave-toggle {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.status-indicator {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+}
+
+.status-indicator.error { color: #dc2626; }
+.status-indicator.success { color: #16a34a; }
+
+.toolbar-view-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.toolbar-view-controls button {
+  background: none; border: none; cursor: pointer; color: var(--node-selected);
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-container {
+  flex: 1;
+  background: var(--bg-canvas);
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas-container svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Comments Panel */
+.comments-panel {
+  width: 340px;
+  background: white;
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out;
+}
+
+.comments-panel.closed {
+  display: none;
+}
+
+.comments-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.comments-header h3 { margin: 0 0 4px 0; font-size: 16px; }
+.node-label-trunc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-icon {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-secondary);
+}
+
+.comments-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-item {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.comment-text {
+  white-space: pre-wrap;
+  margin-bottom: 8px;
+}
+
+.comment-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-state select {
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.comments-compose {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comments-compose textarea {
+  width: 100%;
+  height: 60px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.comments-compose button {
+  align-self: flex-end;
+  background: var(--node-selected);
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Statusbar */
+.statusbar {
+  height: 24px;
+  background: white;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  justify-content: center;
+}
+
+/* Dialog */
+dialog {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+dialog::backdrop { background: rgba(0,0,0,0.5); }
+.dialog-actions {
+  display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;
+}
+.dialog-actions button {
+  padding: 8px 16px; border-radius: 4px; cursor: pointer; border: none; font-weight: 500;
+}
+.btn-primary { background: var(--node-selected); color: white; }
+.btn-danger { background: #dc2626; color: white; }
+
+/* SVG Elements inside Canvas */
+.node-rect {
+  fill: white;
+  stroke: var(--node-border);
+  stroke-width: 1.5;
+  rx: 6;
+}
+.node-rect.selected {
+  stroke: var(--node-selected);
+  stroke-width: 2;
+}
+.connector-line {
+  stroke: var(--node-border);
+  stroke-width: 2;
+  fill: none;
+}
+.connector-line.selected {
+  stroke: var(--node-selected);
+}
+.node-text {
+  font-family: inherit;
+  font-size: 14px;
+  fill: var(--text-primary);
+  user-select: none;
+}
+.resize-handle {
+  fill: white;
+  stroke: var(--node-selected);
+  stroke-width: 1.5;
+  cursor: nwse-resize;
+}
+.connect-handle {
+  fill: white;
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  cursor: crosshair;
+}
+.comment-badge {
+  fill: var(--node-selected);
+  cursor: pointer;
+}
+.comment-badge-text {
+  fill: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* Text Edit Overlay */
+.text-edit-overlay {
+  position: absolute;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/icons/whiteboard.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Doodleback</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+
+<body>
+  <div id="app">
+    <header class="toolbar">
+      <div class="toolbar-brand">Doodleback</div>
+      <div class="toolbar-actions">
+        <button id="btn-new">New</button>
+        <button id="btn-open">Open</button>
+        <button id="btn-save">Save</button>
+        <button id="btn-save-copy">Save as Copy</button>
+        <button id="btn-reload">Reload</button>
+        <div class="toolbar-divider"></div>
+        <label class="autosave-toggle">
+          <input type="checkbox" id="toggle-autosave" checked />
+          Autosave
+        </label>
+        <span id="status-indicator" class="status-indicator"></span>
+      </div>
+      <div class="toolbar-view-controls">
+        <button id="btn-fit">Fit</button>
+        <span id="zoom-level">100%</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="canvas-container" id="canvas-container">
+        <!-- SVG canvas will be injected here -->
+      </div>
+
+      <aside class="comments-panel closed" id="comments-panel">
+        <div class="comments-header">
+          <h3>Comments</h3>
+          <div id="comments-node-label" class="node-label-trunc"></div>
+          <button id="btn-close-comments" class="btn-icon" aria-label="Close comments">×</button>
+        </div>
+        <div class="comments-list" id="comments-list"></div>
+        <div class="comments-compose">
+          <textarea id="comment-input" placeholder="Add comment..."></textarea>
+          <button id="btn-add-comment">Add</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      Double-click to add a box &middot; Drag empty space to pan &middot; Wheel/pinch to zoom
+    </footer>
+  </div>
+  <dialog id="conflict-dialog">
+    <h2>File Conflict</h2>
+    <p>The file was changed externally (e.g. by a model review). What would you like to do?</p>
+    <div class="dialog-actions">
+      <button id="btn-conflict-reload" class="btn-danger">Reload from disk</button>
+      <button id="btn-conflict-copy" class="btn-primary">Save as Copy</button>
+    </div>
+  </dialog>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
