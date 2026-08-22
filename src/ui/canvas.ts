@@ -22,6 +22,7 @@ let dirtyConnectors = new Set<string>();
 
 let selectedNodeId: string | null = null;
 let selectedConnectorId: string | null = null;
+let hoveredNodeId: string | null = null;
 
 let panX = 0;
 let panY = 0;
@@ -155,7 +156,8 @@ function handlePointerDown(e: PointerEvent) {
     tempConnectorLine.setAttribute('y1', String(startY));
     tempConnectorLine.setAttribute('x2', String(startX));
     tempConnectorLine.setAttribute('y2', String(startY));
-    svg.appendChild(tempConnectorLine);
+    const gTransform = svg.querySelector('g#world-transform') || svg;
+    gTransform.appendChild(tempConnectorLine);
     
     e.stopPropagation();
     return;
@@ -173,9 +175,10 @@ function handlePointerDown(e: PointerEvent) {
   const nodeGroup = target.closest('g.node-group') as SVGGElement;
   if (nodeGroup && nodeGroup.dataset.id) {
     const id = nodeGroup.dataset.id;
+    const wasSelected = selectedNodeId === id;
     selectedNodeId = id;
     selectedConnectorId = null;
-    onSelect(id);
+    if (!wasSelected) onSelect(id);
     
     // Raise zIndex
     const node = board.nodes[id];
@@ -183,35 +186,43 @@ function handlePointerDown(e: PointerEvent) {
     for (const n of Object.values(board.nodes)) {
       if (!n.deleted && n.zIndex > maxZ) maxZ = n.zIndex;
     }
+    
+    let needsRender = !wasSelected;
     if (node.zIndex < maxZ) {
       updateNode(board, id, { zIndex: maxZ + 1 });
       dirtyNodes.add(id);
-      // Wait for pointerup to fire onChange to prevent saving during drag?
-      // Actually, standard is to wait for drop, but changing zIndex is an edit.
+      needsRender = true;
     }
     
     interactionMode = 'drag-node';
     interactionOffset = { x: node.x - wX, y: node.y - wY };
-    render();
+    if (needsRender) render();
     e.stopPropagation();
     return;
   }
   
   const connectorGroup = target.closest('g.connector-group') as SVGGElement;
   if (connectorGroup && connectorGroup.dataset.id) {
-    selectedConnectorId = connectorGroup.dataset.id;
+    const id = connectorGroup.dataset.id;
+    const wasSelected = selectedConnectorId === id;
+    selectedConnectorId = id;
     selectedNodeId = null;
-    onSelect(null);
-    render();
+    if (!wasSelected) {
+      onSelect(null);
+      render();
+    }
     e.stopPropagation();
     return;
   }
 
   // Clicked empty space
+  const wasEmpty = selectedNodeId === null && selectedConnectorId === null;
   selectedNodeId = null;
   selectedConnectorId = null;
-  onSelect(null);
-  render();
+  if (!wasEmpty) {
+    onSelect(null);
+    render();
+  }
   
   interactionMode = 'pan';
   interactionStart = { x: e.clientX, y: e.clientY };
@@ -241,10 +252,27 @@ function handlePointerMove(e: PointerEvent) {
     node.width = newWidth;
     node.height = newHeight;
     render();
-  } else if (interactionMode === 'draw-connector' && tempConnectorLine) {
+  } else if (interactionMode === 'draw-connector' && tempConnectorLine && board) {
     const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
     tempConnectorLine.setAttribute('x2', String(wX));
     tempConnectorLine.setAttribute('y2', String(wY));
+    
+    let target: string | null = null;
+    const activeNodes = Object.entries(board.nodes)
+      .filter(([_, n]) => !n.deleted)
+      .sort((a, b) => b[1].zIndex - a[1].zIndex);
+      
+    for (const [id, node] of activeNodes) {
+      if (wX >= node.x && wX <= node.x + node.width && wY >= node.y && wY <= node.y + node.height) {
+        target = id;
+        break;
+      }
+    }
+    
+    if (hoveredNodeId !== target) {
+      hoveredNodeId = target;
+      render();
+    }
   }
 }
 
@@ -260,34 +288,17 @@ function handlePointerUp(e: PointerEvent) {
       tempConnectorLine = null;
     }
     
-    // Find if released over a node
-    svg.style.display = 'none'; // hide briefly to get element under pointer if needed, or just use bounds check
-    svg.style.display = 'block';
-    
-    const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
-    
-    let targetNodeId: string | null = null;
-    // Reverse order (top zIndex first)
-    const activeNodes = Object.entries(board.nodes)
-      .filter(([_, n]) => !n.deleted)
-      .sort((a, b) => b[1].zIndex - a[1].zIndex);
-      
-    for (const [id, node] of activeNodes) {
-      if (wX >= node.x && wX <= node.x + node.width && wY >= node.y && wY <= node.y + node.height) {
-        targetNodeId = id;
-        break;
-      }
-    }
-    
-    if (targetNodeId && targetNodeId !== connectorStartNodeId) {
+    if (hoveredNodeId && hoveredNodeId !== connectorStartNodeId) {
       try {
-        const newId = addConnector(board, connectorStartNodeId, targetNodeId);
+        const newId = addConnector(board, connectorStartNodeId, hoveredNodeId);
         dirtyConnectors.add(newId);
         onChange(dirtyNodes, dirtyConnectors);
       } catch (err) {
         // e.g. duplicate connector
       }
     }
+    hoveredNodeId = null;
+    render();
   }
   
   interactionMode = 'none';
@@ -376,6 +387,12 @@ function handleWheel(e: WheelEvent) {
 function handleKeyDown(e: KeyboardEvent) {
   // Ignore if editing text
   if (document.querySelector('.text-edit-overlay')) return;
+  
+  if (e.key === 'Enter' && selectedNodeId) {
+    startTextEdit(selectedNodeId);
+    e.preventDefault();
+    return;
+  }
   
   if (e.key === 'Escape') {
     if (interactionMode !== 'none') {
@@ -538,20 +555,24 @@ function render() {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.classList.add('node-rect');
     if (isSelected) rect.classList.add('selected');
+    if (id === hoveredNodeId && interactionMode === 'draw-connector' && id !== connectorStartNodeId) rect.classList.add('hover-target');
     rect.setAttribute('width', String(node.width));
     rect.setAttribute('height', String(node.height));
     
-    // Text rendering (simple SVG text with multiple lines)
+    // Text rendering (centered multi-line SVG text)
     const textG = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     textG.classList.add('node-text');
-    textG.setAttribute('x', '12');
-    textG.setAttribute('y', '24');
+    textG.setAttribute('x', String(node.width / 2));
+    textG.setAttribute('y', String(node.height / 2));
+    textG.setAttribute('text-anchor', 'middle');
+    textG.setAttribute('dominant-baseline', 'central');
     
     const lines = node.text.split('\n');
+    const startDy = -((lines.length - 1) / 2) * 1.2;
     for (let i = 0; i < lines.length; i++) {
       const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-      tspan.setAttribute('x', '12');
-      tspan.setAttribute('dy', i === 0 ? '0' : '1.2em');
+      tspan.setAttribute('x', String(node.width / 2));
+      tspan.setAttribute('dy', i === 0 ? `${startDy}em` : '1.2em');
       tspan.textContent = lines[i];
       textG.appendChild(tspan);
     }
@@ -613,5 +634,9 @@ function render() {
     }
     
     gTransform.appendChild(g);
+  }
+  
+  if (tempConnectorLine && interactionMode === 'draw-connector') {
+    gTransform.appendChild(tempConnectorLine);
   }
 }

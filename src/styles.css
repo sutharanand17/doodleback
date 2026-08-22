@@ -263,6 +263,10 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
   stroke: var(--node-selected);
   stroke-width: 2;
 }
+.node-rect.hover-target {
+  stroke: var(--node-selected);
+  stroke-width: 3;
+}
 .connector-line {
   stroke: var(--node-border);
   stroke-width: 2;
@@ -276,6 +280,7 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
   font-size: 14px;
   fill: var(--text-primary);
   user-select: none;
+  pointer-events: none;
 }
 .resize-handle {
   fill: white;
@@ -305,9 +310,10 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 /* Text Edit Overlay */
 .text-edit-overlay {
   position: absolute;
-  background: transparent;
-  border: none;
-  padding: 0;
+  background: white;
+  border: 1px solid var(--node-selected);
+  border-radius: 4px;
+  padding: 8px;
   margin: 0;
   outline: none;
   resize: none;
@@ -317,4 +323,6 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
   overflow: hidden;
   white-space: pre-wrap;
   word-wrap: break-word;
+  text-align: center;
+  z-index: 1000;
 }
