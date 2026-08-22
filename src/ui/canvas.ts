@@ -592,13 +592,13 @@ function render() {
     g.appendChild(textG);
     
     // Comment badge
-    let hasComments = false;
+    let totalComments = 0;
     for (const c of Object.values(board.comments)) {
       if (c.nodeId === id) {
-        hasComments = true;
-        break;
+        totalComments++;
       }
     }
+    const hasComments = totalComments > 0;
     
     const isOpen = node.commentState === 'OPEN' || (!node.commentState && hasComments);
     
@@ -614,7 +614,7 @@ function render() {
       badgeBg.setAttribute('cy', String(badgeY));
       badgeBg.setAttribute('r', '10');
       // If no open comments but selected, make it a faint affordance
-      if (openCount === 0) {
+      if (totalComments === 0) {
         badgeBg.style.fill = '#cbd5e1';
       }
       
@@ -622,7 +622,7 @@ function render() {
       badgeText.classList.add('comment-badge-text');
       badgeText.setAttribute('x', String(badgeX));
       badgeText.setAttribute('y', String(badgeY));
-      badgeText.textContent = openCount > 0 ? String(openCount) : '+';
+      badgeText.textContent = totalComments > 0 ? String(totalComments) : '+';
       
       badgeG.appendChild(badgeBg);
       badgeG.appendChild(badgeText);
