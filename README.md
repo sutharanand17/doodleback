@@ -10,8 +10,8 @@ Long Markdown design documents are token-efficient for models but cumbersome for
 
 - Create, move, resize, edit, and soft-delete rectangular nodes.
 - Add straight connectors that remain attached when nodes move.
-- Add flat node comments with lifecycle states.
-- Show the number of open comments in a node badge.
+- Add chat-style Markdown comments with thread-level lifecycle states.
+- Show the number of comments in a color-coded node badge (Blue = Open, Green = Resolved, Grey = Muted).
 - Pan, zoom, and fit large diagrams to the viewport.
 - Open, save, reload, and save copies of `.board.json` files.
 - Optionally autosave after a short debounce.
@@ -40,23 +40,23 @@ The MVP does not include freehand drawing, images, rich text, colors or shape pa
 The external model does not need to scan the full file. `boardctl` reads it locally and returns compact JSON.
 
 ```bash
-npm run boardctl -- pending design.board.json
-npm run boardctl -- context design.board.json n1 n4
-npm run boardctl -- comment add design.board.json n1 --text "Clarify the failure path."
-npm run boardctl -- review complete design.board.json --through 12
+node bin/boardctl.js pending design.board.json
+node bin/boardctl.js context design.board.json n1 n4
+node bin/boardctl.js comment add design.board.json n1 --text "Clarify the failure path."
+node bin/boardctl.js review complete design.board.json --through 12
 ```
 
 Use `overview` when the model does not yet know node IDs:
 
 ```bash
-npm run boardctl -- overview design.board.json --pretty
+node bin/boardctl.js overview design.board.json --pretty
 ```
 
 The first line of node text is its short label in CLI summaries.
 
-## Comment states
+## Thread states
 
-Comments use a flat chronological list and one of these states:
+Comments are organized into chat-style threads attached to nodes. The overall state belongs to the *node thread* (not individual comments) and can be one of the following:
 
 - `OPEN` — awaiting a decision or action.
 - `ACCEPTED` — recommendation approved.
@@ -99,10 +99,10 @@ npm run build
 Run the model-facing CLI with:
 
 ```bash
-npm run boardctl -- --help
+node bin/boardctl.js --help
 ```
 
-The complete product, architecture, schema, UI reference, CLI contract, and acceptance criteria are specified in [`PROMT.md`](./PROMT.md). Coding-agent behavior is specified in [`AGENTS.md`](./AGENTS.md).
+The complete product, architecture, schema, UI reference, CLI contract, and acceptance criteria are specified in [`PROMT.md`](./PROMT.md). Reviewer-agent rules are in [`AGENTS.md`](./AGENTS.md), while codebase development rules are in [`DEVELOPMENT.md`](./DEVELOPMENT.md).
 
 ## Privacy
 

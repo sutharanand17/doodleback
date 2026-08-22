@@ -9,7 +9,7 @@ import { CommentState } from '../src/core/types.js';
 
 function printHelp() {
   console.log(`
-Usage: npm run boardctl -- COMMAND FILE [ARGS] [--pretty]
+Usage: node boardctl.js COMMAND FILE [ARGS] [--pretty]
 
 Commands:
   validate FILE                       Validate the board JSON.

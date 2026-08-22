@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build:cli": "esbuild tools/boardctl.ts --bundle --platform=node --format=esm --outfile=bin/boardctl.js",
+    "build": "npm run build:cli && tsc --noEmit && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "boardctl": "tsx tools/boardctl.ts"
   },
   "devDependencies": {
-    "tsx": "^4.0.0",
     "@types/node": "^20.0.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0",
