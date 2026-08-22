@@ -84,46 +84,57 @@ export function startTextEdit(nodeId: string) {
   const container = svg.parentElement;
   if (!container) return;
   
-  const textarea = document.createElement('textarea');
-  textarea.className = 'text-edit-overlay';
-  textarea.value = node.text;
+  const editor = document.createElement('div');
+  editor.className = 'text-edit-overlay';
+  editor.contentEditable = 'true';
+  editor.innerText = node.text;
   
-  // Convert world to screen coords for textarea placement
   const screenX = node.x * zoom + panX;
   const screenY = node.y * zoom + panY;
   const screenW = node.width * zoom;
   const screenH = node.height * zoom;
   
-  // Padding matches the SVG node rect
-  textarea.style.left = `${screenX + 12 * zoom}px`;
-  textarea.style.top = `${screenY + 12 * zoom}px`;
-  textarea.style.width = `${screenW - 24 * zoom}px`;
-  textarea.style.height = `${screenH - 24 * zoom}px`;
-  textarea.style.fontSize = `${14 * zoom}px`;
+  editor.style.left = `${screenX}px`;
+  editor.style.top = `${screenY}px`;
+  editor.style.width = `${screenW}px`;
+  editor.style.height = `${screenH}px`;
+  editor.style.fontSize = `${14 * zoom}px`;
   
-  container.appendChild(textarea);
-  textarea.focus();
-  // Place cursor at end
-  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  const nodeGroup = svg.querySelector(`g.node-group[data-id="${nodeId}"]`);
+  if (nodeGroup) nodeGroup.classList.add('editing');
+  
+  container.appendChild(editor);
+  
+  // Focus and place cursor at end
+  editor.focus();
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false); // false means to the end
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
   
   const commitEdit = () => {
-    const newText = textarea.value;
+    const newText = editor.innerText;
     if (newText !== node.text) {
       updateNode(board!, nodeId, { text: newText });
       dirtyNodes.add(nodeId);
       onChange(dirtyNodes, dirtyConnectors);
     }
-    textarea.remove();
+    if (nodeGroup) nodeGroup.classList.remove('editing');
+    editor.remove();
     render();
   };
   
-  textarea.addEventListener('blur', commitEdit);
-  textarea.addEventListener('keydown', (e) => {
+  editor.addEventListener('blur', commitEdit);
+  editor.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      textarea.value = node.text; // cancel
-      textarea.blur();
+      editor.innerText = node.text; // cancel
+      editor.blur();
     }
-    // Note: Allow enter for multiline
+    // Allow enter for multiline
   });
 }
 

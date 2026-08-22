@@ -307,22 +307,27 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
   pointer-events: none;
 }
 
+.node-group.editing .node-text {
+  display: none;
+}
+
 /* Text Edit Overlay */
 .text-edit-overlay {
   position: absolute;
-  background: white;
-  border: 1px solid var(--node-selected);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
+  outline: none;
   padding: 8px;
   margin: 0;
-  outline: none;
-  resize: none;
   font-family: inherit;
   font-size: 14px;
   color: var(--text-primary);
-  overflow: hidden;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   z-index: 1000;
+  overflow: hidden;
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
