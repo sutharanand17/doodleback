@@ -287,7 +287,7 @@ function handlePointerMove(e: PointerEvent) {
   }
 }
 
-function handlePointerUp(e: PointerEvent) {
+function handlePointerUp(_e: PointerEvent) {
   if (interactionMode === 'drag-node' || interactionMode === 'resize-node') {
     if (selectedNodeId) {
       dirtyNodes.add(selectedNodeId);
@@ -613,9 +613,14 @@ function render() {
       badgeBg.setAttribute('cx', String(badgeX));
       badgeBg.setAttribute('cy', String(badgeY));
       badgeBg.setAttribute('r', '10');
-      // If no open comments but selected, make it a faint affordance
+      
+      // Determine badge color based on state
       if (totalComments === 0) {
-        badgeBg.style.fill = '#cbd5e1';
+        badgeBg.style.fill = '#cbd5e1'; // Faint affordance
+      } else if (node.commentState === 'ACCEPTED' || node.commentState === 'APPLIED') {
+        badgeBg.style.fill = '#16a34a'; // Green
+      } else if (node.commentState === 'CLOSED' || node.commentState === 'REJECTED' || node.commentState === 'DEFERRED') {
+        badgeBg.style.fill = '#94a3b8'; // Muted Grey
       }
       
       const badgeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');

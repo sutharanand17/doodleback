@@ -15,9 +15,6 @@ function sortKeysByNaturalId<T>(obj: Record<string, T>): Record<string, T> {
   return sorted;
 }
 
-const nodeKeys = ['type', 'x', 'y', 'width', 'height', 'zIndex', 'text', 'commentState', 'deleted', 'createdRevision', 'updatedRevision', 'updatedBy'];
-const connectorKeys = ['sourceNodeId', 'targetNodeId', 'deleted', 'createdRevision', 'updatedRevision', 'updatedBy'];
-const commentKeys = ['nodeId', 'author', 'text', 'createdAt', 'updatedAt', 'createdRevision', 'updatedRevision', 'updatedBy'];
 
 function serializeNode(node: BoardNode): Record<string, any> {
   return {
@@ -52,7 +49,6 @@ function serializeComment(comment: BoardComment): Record<string, any> {
     nodeId: comment.nodeId,
     author: comment.author,
     text: comment.text,
-    state: comment.state,
     createdAt: comment.createdAt,
     updatedAt: comment.updatedAt,
     createdRevision: comment.createdRevision,

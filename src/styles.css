@@ -164,9 +164,23 @@ body, html {
 
 .comment-item {
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 12px;
   padding: 12px;
   font-size: 13px;
+  max-width: 90%;
+}
+
+.comment-item-human {
+  align-self: flex-end;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  border-bottom-right-radius: 4px;
+}
+
+.comment-item-model {
+  align-self: flex-start;
+  background: #f8fafc;
+  border-bottom-left-radius: 4px;
 }
 
 .comment-meta {
@@ -179,7 +193,24 @@ body, html {
 
 .comment-text {
   white-space: pre-wrap;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.comment-text pre {
+  background: rgba(0,0,0,0.05);
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.comment-text code {
+  background: rgba(0,0,0,0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
 }
 
 .comment-state {

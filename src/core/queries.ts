@@ -37,7 +37,7 @@ export function getPendingChanges(board: BoardDocument) {
   for (const [id, comm] of Object.entries(board.comments)) {
     if (isPending(comm)) {
       changes.push({
-        kind: 'comment', id, change: getChangeKind(comm), nodeId: comm.nodeId, state: comm.state, updatedRevision: comm.updatedRevision
+        kind: 'comment', id, change: getChangeKind(comm), nodeId: comm.nodeId, updatedRevision: comm.updatedRevision
       });
     }
   }
@@ -56,13 +56,9 @@ export function getPendingChanges(board: BoardDocument) {
 export function getOverview(board: BoardDocument) {
   let nodesCount = 0;
   let connectorsCount = 0;
-  let openCommentsCount = 0;
+  let openThreadsCount = 0;
 
   const nodesDesc: any[] = [];
-  
-  for (const comm of Object.values(board.comments)) {
-    if (comm.state === 'OPEN') openCommentsCount++;
-  }
 
   for (const conn of Object.values(board.connectors)) {
     if (!conn.deleted) connectorsCount++;
@@ -78,15 +74,18 @@ export function getOverview(board: BoardDocument) {
           if (conn.targetNodeId === id) connected.add(conn.sourceNodeId);
         }
       }
-      let nodeOpenComments = 0;
+      let nodeHasComments = false;
       for (const comm of Object.values(board.comments)) {
-        if (comm.nodeId === id && comm.state === 'OPEN') nodeOpenComments++;
+        if (comm.nodeId === id) { nodeHasComments = true; break; }
       }
+      const isOpen = nodeHasComments && (node.commentState === 'OPEN' || !node.commentState);
+      if (isOpen) openThreadsCount++;
+      
       nodesDesc.push({
         id,
         label: getLabel(node),
         connectedNodeIds: Array.from(connected),
-        openCommentCount: nodeOpenComments
+        hasOpenThread: isOpen
       });
     }
   }
@@ -95,7 +94,7 @@ export function getOverview(board: BoardDocument) {
     documentId: board.documentId,
     revision: board.revision,
     lastReviewedRevision: board.lastReviewedRevision,
-    counts: { nodes: nodesCount, connectors: connectorsCount, openComments: openCommentsCount },
+    counts: { nodes: nodesCount, connectors: connectorsCount, openThreads: openThreadsCount },
     nodes: nodesDesc
   };
 }

@@ -1,4 +1,4 @@
-import { BoardDocument, BoardNode, CommentState, Actor } from './types.js';
+import { BoardDocument, BoardNode, Actor } from './types.js';
 
 export function createEmptyBoard(): BoardDocument {
   return {
@@ -119,7 +119,6 @@ export function addComment(board: BoardDocument, nodeId: string, text: string, a
     nodeId,
     author,
     text,
-    state: 'OPEN',
     createdAt: now,
     updatedAt: now,
     createdRevision: board.revision,
@@ -128,15 +127,6 @@ export function addComment(board: BoardDocument, nodeId: string, text: string, a
   };
   board.revision++;
   return id;
-}
-
-export function updateCommentState(board: BoardDocument, commentId: string, state: CommentState, actor: Actor) {
-  if (!board.comments[commentId]) throw new Error(`Comment ${commentId} not found`);
-  const rev = bumpRevision(board, actor);
-  board.comments[commentId].state = state;
-  board.comments[commentId].updatedAt = board.modifiedAt;
-  board.comments[commentId].updatedRevision = rev;
-  board.comments[commentId].updatedBy = actor;
 }
 
 export function completeReview(board: BoardDocument, throughRevision: number) {

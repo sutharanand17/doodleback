@@ -1,5 +1,6 @@
 import { BoardDocument, BoardNode, CommentState } from '../core/types.js';
 import { addComment, updateNode } from '../core/operations.js';
+import { markdownToHtml } from '../core/markdown.js';
 
 type StateChangeCallback = () => void;
 
@@ -35,6 +36,29 @@ export function initCommentsPanel(board: BoardDocument, changeCallback: StateCha
       }
     });
   }
+  
+  const input = document.getElementById('comment-input') as HTMLTextAreaElement;
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleAddComment();
+    }
+  });
+}
+
+function formatTimeAgo(isoString: string): string {
+  const date = new Date(isoString);
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function openPanelForNode(nodeId: string, node: BoardNode) {
@@ -55,6 +79,9 @@ export function openPanelForNode(nodeId: string, node: BoardNode) {
   }
   
   renderComments();
+  
+  const input = document.getElementById('comment-input') as HTMLTextAreaElement;
+  if (input) input.focus();
 }
 
 export function closePanel() {
@@ -83,25 +110,26 @@ function renderComments() {
     return;
   }
 
-  for (const [id, c] of comments) {
+  for (const [_id, c] of comments) {
     const item = document.createElement('div');
-    item.className = 'comment-item';
+    item.className = 'comment-item comment-item-' + c.author;
     
     const meta = document.createElement('div');
     meta.className = 'comment-meta';
     
     const authorSpan = document.createElement('span');
-    authorSpan.textContent = c.author;
+    authorSpan.textContent = c.author === 'human' ? 'You' : 'Model';
+    authorSpan.style.fontWeight = '600';
     
     const timeSpan = document.createElement('span');
-    timeSpan.textContent = new Date(c.createdAt).toLocaleString();
+    timeSpan.textContent = formatTimeAgo(c.createdAt);
     
     meta.appendChild(authorSpan);
     meta.appendChild(timeSpan);
     
     const text = document.createElement('div');
     text.className = 'comment-text';
-    text.textContent = c.text;
+    text.innerHTML = markdownToHtml(c.text);
     
     item.appendChild(meta);
     item.appendChild(text);

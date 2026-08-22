@@ -4,7 +4,7 @@ import * as crypto from 'crypto';
 import { validateBoard } from '../src/core/schema.js';
 import { serializeBoard } from '../src/core/serialize.js';
 import { getOverview, getPendingChanges, getContext, searchNodes } from '../src/core/queries.js';
-import { addComment, updateNode, completeReview } from '../src/core/operations.js';
+import { addComment, completeReview } from '../src/core/operations.js';
 import { CommentState } from '../src/core/types.js';
 
 function printHelp() {

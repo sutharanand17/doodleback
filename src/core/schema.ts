@@ -1,4 +1,4 @@
-import { BoardDocument, CommentState, Actor } from './types.js';
+import { BoardDocument, Actor } from './types.js';
 
 const NODE_ID_RE = /^n[1-9][0-9]*$/;
 const CONNECTOR_ID_RE = /^e[1-9][0-9]*$/;
@@ -24,9 +24,7 @@ function isActor(val: unknown): val is Actor {
   return val === 'human' || val === 'model';
 }
 
-function isCommentState(val: unknown): val is CommentState {
-  return ['OPEN', 'ACCEPTED', 'APPLIED', 'CLOSED', 'REJECTED', 'DEFERRED'].includes(val as string);
-}
+
 
 function extractIdNumber(id: string): number {
   return parseInt(id.slice(1), 10);
@@ -73,7 +71,7 @@ export function validateBoard(data: unknown): BoardDocument {
 
     if (!isObject(node)) throw new Error(`Node ${id} is not an object`);
     if (typeof node.text !== 'string') throw new Error('Node text must be string');
-    if (node.commentState !== undefined && !['OPEN', 'ACCEPTED', 'APPLIED', 'CLOSED', 'REJECTED', 'DEFERRED'].includes(node.commentState)) {
+    if (node.commentState !== undefined && !['OPEN', 'ACCEPTED', 'APPLIED', 'CLOSED', 'REJECTED', 'DEFERRED'].includes(node.commentState as string)) {
       throw new Error('Invalid node commentState');
     }
     if (typeof node.deleted !== 'boolean') throw new Error('Node deleted must be boolean');
