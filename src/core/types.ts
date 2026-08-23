@@ -32,7 +32,7 @@ export interface RevisionedRecord {
 }
 
 export interface BoardNode extends RevisionedRecord {
-  type: "rectangle";
+  type: "rectangle" | "text";
   x: number;
   y: number;
   width: number;

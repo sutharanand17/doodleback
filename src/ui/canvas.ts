@@ -68,6 +68,19 @@ export function initCanvas(containerId: string, doc: BoardDocument, callbacks: {
     isCommentsPanelActive = !!(e.target as Element)?.closest?.('.comments-panel');
   });
 
+  // Floating toolbar events
+  const btnToggleType = document.getElementById('btn-toggle-type');
+  btnToggleType?.addEventListener('click', () => {
+    if (selectedNodeId && board?.nodes[selectedNodeId]) {
+      const node = board.nodes[selectedNodeId];
+      const newType = node.type === 'rectangle' ? 'text' : 'rectangle';
+      updateNode(board, selectedNodeId, { type: newType });
+      dirtyNodes.add(selectedNodeId);
+      onChange(dirtyNodes, dirtyConnectors);
+      render();
+    }
+  });
+
   render();
 }
 
@@ -578,6 +591,7 @@ function render() {
     
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.classList.add('node-rect');
+    if (node.type === 'text') rect.classList.add('node-type-text');
     if (isSelected) rect.classList.add('selected');
     if (id === hoveredNodeId && interactionMode === 'draw-connector' && id !== connectorStartNodeId) rect.classList.add('hover-target');
     rect.setAttribute('width', String(node.width));
@@ -678,6 +692,21 @@ function render() {
     }
     
     gTransform.appendChild(g);
+  }
+  
+  // Update floating toolbar
+  const floatingToolbar = document.getElementById('node-floating-toolbar');
+  if (floatingToolbar) {
+    if (selectedNodeId && board.nodes[selectedNodeId] && !board.nodes[selectedNodeId].deleted) {
+      const node = board.nodes[selectedNodeId];
+      const screenX = node.x * zoom + panX;
+      const screenY = node.y * zoom + panY;
+      floatingToolbar.style.left = `${screenX}px`;
+      floatingToolbar.style.top = `${screenY - 34}px`;
+      floatingToolbar.classList.remove('hidden');
+    } else {
+      floatingToolbar.classList.add('hidden');
+    }
   }
   
   if (tempConnectorLine && interactionMode === 'draw-connector') {

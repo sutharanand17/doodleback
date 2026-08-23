@@ -37,7 +37,7 @@ export function addNode(board: BoardDocument, node: Omit<BoardNode, 'createdRevi
   return id;
 }
 
-export function updateNode(board: BoardDocument, id: string, updates: Partial<Pick<BoardNode, 'x' | 'y' | 'width' | 'height' | 'zIndex' | 'text' | 'deleted' | 'commentState'>>) {
+export function updateNode(board: BoardDocument, id: string, updates: Partial<Pick<BoardNode, 'x' | 'y' | 'width' | 'height' | 'zIndex' | 'text' | 'deleted' | 'commentState' | 'type'>>) {
   if (!board.nodes[id]) throw new Error(`Node ${id} not found`);
   Object.assign(board.nodes[id], updates);
 }

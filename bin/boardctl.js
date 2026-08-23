@@ -62,7 +62,7 @@ function validateBoard(data) {
       throw new Error("Invalid node commentState");
     }
     if (typeof node.deleted !== "boolean") throw new Error("Node deleted must be boolean");
-    if (node.type !== "rectangle") throw new Error(`Node ${id} invalid type`);
+    if (node.type !== "rectangle" && node.type !== "text") throw new Error(`Node ${id} invalid type`);
     if (!isNumber(node.x) || !isNumber(node.y)) throw new Error(`Node ${id} invalid coordinates`);
     if (!isNumber(node.width) || node.width <= 0) throw new Error(`Node ${id} invalid width`);
     if (!isNumber(node.height) || node.height <= 0) throw new Error(`Node ${id} invalid height`);
