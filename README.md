@@ -104,6 +104,14 @@ node bin/boardctl.js --help
 
 The complete product, architecture, schema, UI reference, CLI contract, and acceptance criteria are specified in [`PROMT.md`](./PROMT.md). Reviewer-agent rules are in [`AGENTS.md`](./AGENTS.md), while codebase development rules are in [`DEVELOPMENT.md`](./DEVELOPMENT.md).
 
+## Known shortcomings
+
+- **Browser Support**: Relies on the `File System Access API`, restricting usage to Google Chrome and excluding Safari, Firefox, and mobile users.
+- **CLI Dependency**: Requires a local Node.js environment and `boardctl` CLI for reviews, which may exclude non-technical stakeholders and add friction for AI agents.
+- **No Auto-Merge**: File hash mismatches only offer a copy/reload option, making asynchronous collaboration prone to lost work.
+- **Basic Visuals**: Lacks standard diagramming features like colors, arrowheads, grouping, or elbow connectors.
+- **Single File Storage**: Storing the entire board in a single `.board.json` file can lead to unreadable Git diffs and merge conflicts.
+
 ## Privacy
 
 - Board content remains in user-selected local files.

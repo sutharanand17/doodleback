@@ -34,6 +34,7 @@ let interactionStart = { x: 0, y: 0 };
 let interactionOffset = { x: 0, y: 0 };
 let connectorStartNodeId: string | null = null;
 let tempConnectorLine: SVGLineElement | null = null;
+let isCommentsPanelActive = false;
 
 export function initCanvas(containerId: string, doc: BoardDocument, callbacks: {
   onChange: CanvasChangeCallback;
@@ -62,6 +63,10 @@ export function initCanvas(containerId: string, doc: BoardDocument, callbacks: {
   svg.addEventListener('dblclick', handleDoubleClick);
   container.addEventListener('wheel', handleWheel, { passive: false });
   document.addEventListener('keydown', handleKeyDown);
+  
+  document.addEventListener('pointerdown', (e) => {
+    isCommentsPanelActive = !!(e.target as Element)?.closest?.('.comments-panel');
+  });
 
   render();
 }
@@ -396,8 +401,16 @@ function handleWheel(e: WheelEvent) {
 }
 
 function handleKeyDown(e: KeyboardEvent) {
-  // Ignore if editing text
-  if (document.querySelector('.text-edit-overlay')) return;
+  // Ignore if editing text, interacting with UI inputs, or if comments panel was last clicked
+  if (
+    document.querySelector('.text-edit-overlay') ||
+    document.activeElement?.tagName === 'INPUT' ||
+    document.activeElement?.tagName === 'TEXTAREA' ||
+    (document.activeElement as HTMLElement)?.isContentEditable ||
+    isCommentsPanelActive
+  ) {
+    return;
+  }
   
   if (e.key === 'Enter' && selectedNodeId) {
     startTextEdit(selectedNodeId);
@@ -570,26 +583,36 @@ function render() {
     rect.setAttribute('width', String(node.width));
     rect.setAttribute('height', String(node.height));
     
-    // Text rendering (centered multi-line SVG text)
-    const textG = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textG.classList.add('node-text');
-    textG.setAttribute('x', String(node.width / 2));
-    textG.setAttribute('y', String(node.height / 2));
-    textG.setAttribute('text-anchor', 'middle');
-    textG.setAttribute('dominant-baseline', 'central');
+    // Text rendering via foreignObject for wrapping
+    const foreign = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+    foreign.classList.add('node-text-container');
+    const maxH = 2000;
+    foreign.setAttribute('x', '0');
+    foreign.setAttribute('y', String((node.height - maxH) / 2));
+    foreign.setAttribute('width', String(node.width));
+    foreign.setAttribute('height', String(maxH));
+    foreign.setAttribute('overflow', 'visible');
     
-    const lines = node.text.split('\n');
-    const startDy = -((lines.length - 1) / 2) * 1.2;
-    for (let i = 0; i < lines.length; i++) {
-      const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-      tspan.setAttribute('x', String(node.width / 2));
-      tspan.setAttribute('dy', i === 0 ? `${startDy}em` : '1.2em');
-      tspan.textContent = lines[i];
-      textG.appendChild(tspan);
-    }
+    const div = document.createElement('div');
+    div.classList.add('node-text');
+    div.style.width = '100%';
+    div.style.height = '100%';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'center';
+    div.style.textAlign = 'center';
+    div.style.padding = '8px';
+    div.style.boxSizing = 'border-box';
+    div.style.wordWrap = 'break-word';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.color = 'var(--text-primary)';
+    div.style.margin = '0';
+    div.textContent = node.text;
+    
+    foreign.appendChild(div);
     
     g.appendChild(rect);
-    g.appendChild(textG);
+    g.appendChild(foreign);
     
     // Comment badge
     let totalComments = 0;
