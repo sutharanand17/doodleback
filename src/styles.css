@@ -1,11 +1,13 @@
 :root {
   --bg-app: #f8fafc;
-  --bg-canvas: #f1f5f9;
+  --bg-canvas: #f8fafc;
   --border-color: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --node-border: #64748b;
-  --node-selected: #2563eb;
+  --node-border: #cbd5e1;
+  --node-selected: #3b82f6;
+  --node-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --node-shadow-selected: 0 10px 15px -3px rgb(59 130 246 / 0.3), 0 4px 6px -4px rgb(59 130 246 / 0.3);
 }
 
 * { box-sizing: border-box; }
@@ -13,7 +15,7 @@
 body, html {
   margin: 0; padding: 0;
   width: 100%; height: 100%;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   background: var(--bg-app);
   color: var(--text-primary);
@@ -107,7 +109,10 @@ body, html {
 
 .canvas-container {
   flex: 1;
-  background: var(--bg-canvas);
+  background-color: var(--bg-canvas);
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 0 0;
   position: relative;
   overflow: hidden;
 }
@@ -287,16 +292,18 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .node-rect {
   fill: white;
   stroke: var(--node-border);
-  stroke-width: 1.5;
-  rx: 6;
+  stroke-width: 1;
+  rx: 8;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.05));
 }
 .node-rect.selected {
   stroke: var(--node-selected);
   stroke-width: 2;
+  filter: drop-shadow(0 4px 8px rgb(59 130 246 / 0.2));
 }
 .node-rect.hover-target {
   stroke: var(--node-selected);
-  stroke-width: 3;
+  stroke-width: 2;
 }
 .connector-line {
   stroke: var(--node-border);
@@ -316,13 +323,14 @@ dialog::backdrop { background: rgba(0,0,0,0.5); }
 .resize-handle {
   fill: white;
   stroke: var(--node-selected);
-  stroke-width: 1.5;
+  stroke-width: 2;
   cursor: nwse-resize;
+  rx: 2;
 }
 .connect-handle {
   fill: white;
-  stroke: var(--text-secondary);
-  stroke-width: 1.5;
+  stroke: var(--node-selected);
+  stroke-width: 2;
   cursor: crosshair;
 }
 .comment-badge {

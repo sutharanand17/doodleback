@@ -4,6 +4,11 @@ import { addNode, updateNode, addConnector, markConnectorDeleted } from '../core
 
 const MIN_WIDTH = 160;
 const MIN_HEIGHT = 80;
+const GRID_SIZE = 20;
+
+function snap(value: number): number {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE;
+}
 
 type CanvasChangeCallback = (dirtyNodes: Set<string>, dirtyConnectors: Set<string>) => void;
 type SelectionCallback = (nodeId: string | null) => void;
@@ -224,6 +229,7 @@ function handlePointerDown(e: PointerEvent) {
     }
     
     interactionMode = 'drag-node';
+    // Offset is calculated from the current snapped node position to the raw pointer position
     interactionOffset = { x: node.x - wX, y: node.y - wY };
     if (needsRender) render();
     e.stopPropagation();
@@ -268,15 +274,15 @@ function handlePointerMove(e: PointerEvent) {
   } else if (interactionMode === 'drag-node' && selectedNodeId && board) {
     const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
     const node = board.nodes[selectedNodeId];
-    node.x = wX + interactionOffset.x;
-    node.y = wY + interactionOffset.y;
+    node.x = snap(wX + interactionOffset.x);
+    node.y = snap(wY + interactionOffset.y);
     render();
   } else if (interactionMode === 'resize-node' && selectedNodeId && board) {
     const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
     const node = board.nodes[selectedNodeId];
     
-    const newWidth = Math.max(MIN_WIDTH, wX - node.x);
-    const newHeight = Math.max(MIN_HEIGHT, wY - node.y);
+    const newWidth = snap(Math.max(MIN_WIDTH, wX - node.x));
+    const newHeight = snap(Math.max(MIN_HEIGHT, wY - node.y));
     
     node.width = newWidth;
     node.height = newHeight;
@@ -354,10 +360,10 @@ function handleDoubleClick(e: MouseEvent) {
   
   const newId = addNode(board, {
     type: 'rectangle',
-    x: wX,
-    y: wY,
-    width: 240,
-    height: 120,
+    x: snap(wX),
+    y: snap(wY),
+    width: snap(240),
+    height: snap(120),
     zIndex: maxZ + 1,
     text: '',
     deleted: false
@@ -527,6 +533,12 @@ function render() {
     zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
   }
   
+  // Sync background to pan and zoom
+  if (svg.parentElement) {
+    svg.parentElement.style.backgroundPosition = `${panX}px ${panY}px`;
+    svg.parentElement.style.backgroundSize = `${GRID_SIZE * zoom}px ${GRID_SIZE * zoom}px`;
+  }
+
   // Create a transform group
   let gTransform = svg.querySelector('g#world-transform') as SVGGElement;
   if (!gTransform) {
@@ -679,16 +691,17 @@ function render() {
       cHandle.classList.add('connect-handle');
       cHandle.setAttribute('cx', String(node.width));
       cHandle.setAttribute('cy', String(node.height / 2));
-      cHandle.setAttribute('r', '6');
+      cHandle.setAttribute('r', '5'); // slightly smaller for a refined look
       g.appendChild(cHandle);
       
       // Resize handle (bottom right)
       const rHandle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rHandle.classList.add('resize-handle');
-      rHandle.setAttribute('x', String(node.width - 5));
-      rHandle.setAttribute('y', String(node.height - 5));
-      rHandle.setAttribute('width', '10');
-      rHandle.setAttribute('height', '10');
+      rHandle.setAttribute('x', String(node.width - 6)); // offset by 6
+      rHandle.setAttribute('y', String(node.height - 6));
+      rHandle.setAttribute('width', '12'); // slightly larger but centered on corner
+      rHandle.setAttribute('height', '12');
+      rHandle.setAttribute('rx', '2'); // rounded corners in case CSS doesn't apply cleanly here
       g.appendChild(rHandle);
     }
     
