@@ -25,7 +25,7 @@ let onOpenComments: OpenCommentsCallback = () => {};
 let dirtyNodes = new Set<string>();
 let dirtyConnectors = new Set<string>();
 
-let selectedNodeId: string | null = null;
+let selectedNodeIds = new Set<string>();
 let selectedConnectorId: string | null = null;
 let hoveredNodeId: string | null = null;
 
@@ -34,10 +34,12 @@ let panY = 0;
 let zoom = 1;
 
 // Interaction state
-let interactionMode: 'none' | 'pan' | 'drag-node' | 'resize-node' | 'draw-connector' = 'none';
+let interactionMode: 'none' | 'pan' | 'drag-node' | 'resize-node' | 'draw-connector' | 'marquee' = 'none';
 let interactionStart = { x: 0, y: 0 };
-let interactionOffset = { x: 0, y: 0 };
+let dragOffsets = new Map<string, { x: number, y: number }>();
 let connectorStartNodeId: string | null = null;
+let marqueeRect: SVGRectElement | null = null;
+let marqueeInitialSelection = new Set<string>();
 let tempConnectorLine: SVGLineElement | null = null;
 let isCommentsPanelActive = false;
 
@@ -76,13 +78,16 @@ export function initCanvas(containerId: string, doc: BoardDocument, callbacks: {
   // Floating toolbar events
   const btnToggleType = document.getElementById('btn-toggle-type');
   btnToggleType?.addEventListener('click', () => {
-    if (selectedNodeId && board?.nodes[selectedNodeId]) {
-      const node = board.nodes[selectedNodeId];
-      const newType = node.type === 'rectangle' ? 'text' : 'rectangle';
-      updateNode(board, selectedNodeId, { type: newType });
-      dirtyNodes.add(selectedNodeId);
+    if (selectedNodeIds.size === 1) {
+      const id = Array.from(selectedNodeIds)[0];
+      if (board?.nodes[id]) {
+        const node = board.nodes[id];
+        const newType = node.type === 'rectangle' ? 'text' : 'rectangle';
+        updateNode(board, id, { type: newType });
+        dirtyNodes.add(id);
       onChange(dirtyNodes, dirtyConnectors);
-      render();
+        render();
+      }
     }
   });
 
@@ -97,7 +102,7 @@ export function updateBoard(newBoard: BoardDocument) {
 }
 
 export function getSelectedNodeId() {
-  return selectedNodeId;
+  return selectedNodeIds.size === 1 ? Array.from(selectedNodeIds)[0] : null;
 }
 
 export function startTextEdit(nodeId: string) {
@@ -170,16 +175,18 @@ function handlePointerDown(e: PointerEvent) {
   if (target.classList.contains('resize-handle')) {
     interactionMode = 'resize-node';
     interactionStart = { x: wX, y: wY };
+    marqueeInitialSelection = new Set(selectedNodeIds);
     e.stopPropagation();
     return;
   }
   
   if (target.classList.contains('connect-handle')) {
     interactionMode = 'draw-connector';
-    connectorStartNodeId = selectedNodeId;
+    connectorStartNodeId = Array.from(selectedNodeIds)[0];
     
     tempConnectorLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     tempConnectorLine.classList.add('connector-line');
+    tempConnectorLine.setAttribute('marker-end', 'url(#arrowhead)');
     
     // Position start at handle center (right edge center)
     const node = board.nodes[connectorStartNodeId!];
@@ -209,28 +216,59 @@ function handlePointerDown(e: PointerEvent) {
   const nodeGroup = target.closest('g.node-group') as SVGGElement;
   if (nodeGroup && nodeGroup.dataset.id) {
     const id = nodeGroup.dataset.id;
-    const wasSelected = selectedNodeId === id;
-    selectedNodeId = id;
-    selectedConnectorId = null;
-    if (!wasSelected) onSelect(id);
-    
-    // Raise zIndex
-    const node = board.nodes[id];
-    let maxZ = 0;
-    for (const n of Object.values(board.nodes)) {
-      if (!n.deleted && n.zIndex > maxZ) maxZ = n.zIndex;
-    }
-    
-    let needsRender = !wasSelected;
-    if (node.zIndex < maxZ) {
-      updateNode(board, id, { zIndex: maxZ + 1 });
-      dirtyNodes.add(id);
+    let needsRender = false;
+    let isDeselecting = false;
+
+    if (e.shiftKey) {
+      if (selectedNodeIds.has(id)) {
+        selectedNodeIds.delete(id);
+        isDeselecting = true;
+        if (selectedNodeIds.size === 1) onSelect(Array.from(selectedNodeIds)[0]);
+        else onSelect(null);
+      } else {
+        selectedNodeIds.add(id);
+        selectedConnectorId = null;
+        if (selectedNodeIds.size === 1) onSelect(id);
+        else onSelect(null);
+      }
       needsRender = true;
+    } else {
+      if (!selectedNodeIds.has(id)) {
+        selectedNodeIds.clear();
+        selectedNodeIds.add(id);
+        selectedConnectorId = null;
+        onSelect(id);
+        needsRender = true;
+      }
     }
     
-    interactionMode = 'drag-node';
-    // Offset is calculated from the current snapped node position to the raw pointer position
-    interactionOffset = { x: node.x - wX, y: node.y - wY };
+    if (!isDeselecting) {
+      // Raise zIndex
+      const node = board.nodes[id];
+      let maxZ = 0;
+      for (const n of Object.values(board.nodes)) {
+        if (!n.deleted && n.zIndex > maxZ) maxZ = n.zIndex;
+      }
+
+      if (node.zIndex < maxZ) {
+        updateNode(board, id, { zIndex: maxZ + 1 });
+        dirtyNodes.add(id);
+        needsRender = true;
+      }
+
+      interactionMode = 'drag-node';
+
+      dragOffsets.clear();
+      for (const sId of selectedNodeIds) {
+        const sNode = board.nodes[sId];
+        if (sNode) {
+          dragOffsets.set(sId, { x: sNode.x - wX, y: sNode.y - wY });
+        }
+      }
+    } else {
+      interactionMode = 'none'; // Prevent drag when deselecting
+    }
+    
     if (needsRender) render();
     e.stopPropagation();
     return;
@@ -241,7 +279,7 @@ function handlePointerDown(e: PointerEvent) {
     const id = connectorGroup.dataset.id;
     const wasSelected = selectedConnectorId === id;
     selectedConnectorId = id;
-    selectedNodeId = null;
+    selectedNodeIds.clear();
     if (!wasSelected) {
       onSelect(null);
       render();
@@ -251,16 +289,32 @@ function handlePointerDown(e: PointerEvent) {
   }
 
   // Clicked empty space
-  const wasEmpty = selectedNodeId === null && selectedConnectorId === null;
-  selectedNodeId = null;
-  selectedConnectorId = null;
-  if (!wasEmpty) {
-    onSelect(null);
-    render();
+  const wasEmpty = selectedNodeIds.size === 0 && selectedConnectorId === null;
+
+  if (!e.shiftKey) {
+    selectedNodeIds.clear();
+    selectedConnectorId = null;
+    if (!wasEmpty) {
+      onSelect(null);
+      render();
+    }
   }
   
-  interactionMode = 'pan';
-  interactionStart = { x: e.clientX, y: e.clientY };
+  if (e.shiftKey) {
+    interactionMode = 'marquee';
+    interactionStart = { x: wX, y: wY };
+    marqueeInitialSelection = new Set(selectedNodeIds);
+    marqueeRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    marqueeRect.classList.add('marquee-rect');
+    marqueeRect.setAttribute('fill', 'rgba(59, 130, 246, 0.1)');
+    marqueeRect.setAttribute('stroke', 'rgba(59, 130, 246, 0.5)');
+    marqueeRect.setAttribute('stroke-width', '1');
+    const gTransform = svg.querySelector('g#world-transform') || svg;
+    gTransform.appendChild(marqueeRect);
+  } else {
+    interactionMode = 'pan';
+    interactionStart = { x: e.clientX, y: e.clientY };
+  }
 }
 
 function handlePointerMove(e: PointerEvent) {
@@ -271,19 +325,53 @@ function handlePointerMove(e: PointerEvent) {
     panY += dy;
     interactionStart = { x: e.clientX, y: e.clientY };
     render();
-  } else if (interactionMode === 'drag-node' && selectedNodeId && board) {
+  } else if (interactionMode === 'marquee' && marqueeRect && board) {
     const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
-    const node = board.nodes[selectedNodeId];
-    node.x = snap(wX + interactionOffset.x);
-    node.y = snap(wY + interactionOffset.y);
+    const x = Math.min(interactionStart.x, wX);
+    const y = Math.min(interactionStart.y, wY);
+    const width = Math.abs(wX - interactionStart.x);
+    const height = Math.abs(wY - interactionStart.y);
+
+    marqueeRect.setAttribute('x', String(x));
+    marqueeRect.setAttribute('y', String(y));
+    marqueeRect.setAttribute('width', String(width));
+    marqueeRect.setAttribute('height', String(height));
+
+    selectedNodeIds.clear();
+    for (const id of marqueeInitialSelection) {
+      selectedNodeIds.add(id);
+    }
+
+    for (const [id, node] of Object.entries(board.nodes)) {
+      if (!node.deleted) {
+        if (node.x < x + width && node.x + node.width > x &&
+            node.y < y + height && node.y + node.height > y) {
+          selectedNodeIds.add(id);
+        }
+      }
+    }
+
+    if (selectedNodeIds.size === 1) onSelect(Array.from(selectedNodeIds)[0]);
+    else onSelect(null);
+
     render();
-  } else if (interactionMode === 'resize-node' && selectedNodeId && board) {
+  } else if (interactionMode === 'drag-node' && selectedNodeIds.size > 0 && board) {
     const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
-    const node = board.nodes[selectedNodeId];
-    
+    for (const id of selectedNodeIds) {
+      const node = board.nodes[id];
+      const offset = dragOffsets.get(id);
+      if (node && offset) {
+        node.x = snap(wX + offset.x);
+        node.y = snap(wY + offset.y);
+      }
+    }
+    render();
+  } else if (interactionMode === 'resize-node' && selectedNodeIds.size === 1 && board) {
+    const { x: wX, y: wY } = screenToWorld(e.clientX, e.clientY);
+    const id = Array.from(selectedNodeIds)[0];
+    const node = board.nodes[id];
     const newWidth = snap(Math.max(MIN_WIDTH, wX - node.x));
     const newHeight = snap(Math.max(MIN_HEIGHT, wY - node.y));
-    
     node.width = newWidth;
     node.height = newHeight;
     render();
@@ -313,9 +401,14 @@ function handlePointerMove(e: PointerEvent) {
 
 function handlePointerUp(_e: PointerEvent) {
   if (interactionMode === 'drag-node' || interactionMode === 'resize-node') {
-    if (selectedNodeId) {
-      dirtyNodes.add(selectedNodeId);
-      onChange(dirtyNodes, dirtyConnectors);
+    for (const id of selectedNodeIds) {
+      dirtyNodes.add(id);
+    }
+    if (selectedNodeIds.size > 0) onChange(dirtyNodes, dirtyConnectors);
+  } else if (interactionMode === 'marquee') {
+    if (marqueeRect) {
+      marqueeRect.remove();
+      marqueeRect = null;
     }
   } else if (interactionMode === 'draw-connector' && board && connectorStartNodeId) {
     if (tempConnectorLine) {
@@ -370,7 +463,8 @@ function handleDoubleClick(e: MouseEvent) {
   });
   
   dirtyNodes.add(newId);
-  selectedNodeId = newId;
+  selectedNodeIds.clear();
+  selectedNodeIds.add(newId);
   selectedConnectorId = null;
   onSelect(newId);
   onChange(dirtyNodes, dirtyConnectors);
@@ -431,8 +525,8 @@ function handleKeyDown(e: KeyboardEvent) {
     return;
   }
   
-  if (e.key === 'Enter' && selectedNodeId) {
-    startTextEdit(selectedNodeId);
+  if (e.key === 'Enter' && selectedNodeIds.size === 1) {
+    startTextEdit(Array.from(selectedNodeIds)[0]);
     e.preventDefault();
     return;
   }
@@ -444,19 +538,21 @@ function handleKeyDown(e: KeyboardEvent) {
       if (tempConnectorLine) tempConnectorLine.remove();
     }
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (selectedNodeId && board && !board.nodes[selectedNodeId].deleted) {
-      updateNode(board, selectedNodeId, { deleted: true });
-      dirtyNodes.add(selectedNodeId);
-      
-      // Tombstone incident connectors
-      for (const [eId, conn] of Object.entries(board.connectors)) {
-        if (!conn.deleted && (conn.sourceNodeId === selectedNodeId || conn.targetNodeId === selectedNodeId)) {
-          markConnectorDeleted(board, eId);
-          dirtyConnectors.add(eId);
+    if (selectedNodeIds.size > 0 && board) {
+      for (const id of selectedNodeIds) {
+        if (!board.nodes[id].deleted) {
+          updateNode(board, id, { deleted: true });
+          dirtyNodes.add(id);
+
+          for (const [eId, conn] of Object.entries(board.connectors)) {
+            if (!conn.deleted && (conn.sourceNodeId === id || conn.targetNodeId === id)) {
+              markConnectorDeleted(board, eId);
+              dirtyConnectors.add(eId);
+            }
+          }
         }
       }
-      
-      selectedNodeId = null;
+      selectedNodeIds.clear();
       onSelect(null);
       onChange(dirtyNodes, dirtyConnectors);
       render();
@@ -539,6 +635,44 @@ function render() {
     svg.parentElement.style.backgroundSize = `${GRID_SIZE * zoom}px ${GRID_SIZE * zoom}px`;
   }
 
+  // Defs for markers
+  let defs = svg.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    svg.appendChild(defs);
+
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    marker.id = 'arrowhead';
+    marker.setAttribute('markerWidth', '10');
+    marker.setAttribute('markerHeight', '7');
+    marker.setAttribute('refX', '9');
+    marker.setAttribute('refY', '3.5');
+    marker.setAttribute('orient', 'auto');
+
+    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+    // inherit fill from the line's stroke
+    polygon.style.fill = 'var(--node-border)';
+
+    marker.appendChild(polygon);
+    defs.appendChild(marker);
+
+    const markerSelected = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    markerSelected.id = 'arrowhead-selected';
+    markerSelected.setAttribute('markerWidth', '10');
+    markerSelected.setAttribute('markerHeight', '7');
+    markerSelected.setAttribute('refX', '9');
+    markerSelected.setAttribute('refY', '3.5');
+    markerSelected.setAttribute('orient', 'auto');
+
+    const polygonSelected = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    polygonSelected.setAttribute('points', '0 0, 10 3.5, 0 7');
+    polygonSelected.style.fill = 'var(--node-selected)';
+
+    markerSelected.appendChild(polygonSelected);
+    defs.appendChild(markerSelected);
+  }
+
   // Create a transform group
   let gTransform = svg.querySelector('g#world-transform') as SVGGElement;
   if (!gTransform) {
@@ -577,7 +711,13 @@ function render() {
     
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.classList.add('connector-line');
-    if (id === selectedConnectorId) line.classList.add('selected');
+    if (id === selectedConnectorId) {
+      line.classList.add('selected');
+      line.setAttribute('marker-end', 'url(#arrowhead-selected)');
+    } else {
+      line.setAttribute('marker-end', 'url(#arrowhead)');
+    }
+
     line.setAttribute('x1', String(p1.x));
     line.setAttribute('y1', String(p1.y));
     line.setAttribute('x2', String(p2.x));
@@ -594,7 +734,7 @@ function render() {
     .sort((a, b) => a[1].zIndex - b[1].zIndex);
     
   for (const [id, node] of activeNodes) {
-    const isSelected = id === selectedNodeId;
+    const isSelected = selectedNodeIds.has(id);
     
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.classList.add('node-group');
@@ -683,8 +823,8 @@ function render() {
       g.appendChild(badgeG);
     }
     
-    // Selection handles
-    if (isSelected) {
+    // Selection handles (only if exactly 1 is selected)
+    if (isSelected && selectedNodeIds.size === 1) {
       // Connect handle (right center)
       const cHandle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       cHandle.classList.add('connect-handle');
@@ -710,13 +850,18 @@ function render() {
   // Update floating toolbar
   const floatingToolbar = document.getElementById('node-floating-toolbar');
   if (floatingToolbar) {
-    if (selectedNodeId && board.nodes[selectedNodeId] && !board.nodes[selectedNodeId].deleted) {
-      const node = board.nodes[selectedNodeId];
-      const screenX = node.x * zoom + panX;
-      const screenY = node.y * zoom + panY;
-      floatingToolbar.style.left = `${screenX}px`;
-      floatingToolbar.style.top = `${screenY - 34}px`;
-      floatingToolbar.classList.remove('hidden');
+    if (selectedNodeIds.size === 1) {
+      const id = Array.from(selectedNodeIds)[0];
+      if (board.nodes[id] && !board.nodes[id].deleted) {
+        const node = board.nodes[id];
+        const screenX = node.x * zoom + panX;
+        const screenY = node.y * zoom + panY;
+        floatingToolbar.style.left = `${screenX}px`;
+        floatingToolbar.style.top = `${screenY - 34}px`;
+        floatingToolbar.classList.remove('hidden');
+      } else {
+        floatingToolbar.classList.add('hidden');
+      }
     } else {
       floatingToolbar.classList.add('hidden');
     }
