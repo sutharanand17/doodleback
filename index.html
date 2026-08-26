@@ -46,7 +46,7 @@
         <!-- SVG canvas will be injected here -->
       </div>
       <div id="node-floating-toolbar" class="floating-toolbar hidden">
-        <button id="btn-toggle-type" title="Toggle Text/Rectangle Mode">T</button>
+        <button id="btn-toggle-type" title="Toggle Text/Rectangle Mode" aria-label="Toggle Text/Rectangle Mode">T</button>
       </div>
 
       <aside class="comments-panel closed" id="comments-panel">
@@ -57,12 +57,12 @@
         </div>
         <div class="comments-thread-state" id="comments-thread-state"
           style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
-          <span>Thread State:</span>
+          <label for="thread-state-select">Thread State:</label>
           <select id="thread-state-select" style="font-size: 13px;"></select>
         </div>
         <div class="comments-list" id="comments-list"></div>
         <div class="comments-compose">
-          <textarea id="comment-input" placeholder="Add comment..."></textarea>
+          <textarea id="comment-input" placeholder="Add comment..." aria-label="New comment"></textarea>
           <button id="btn-add-comment">Add</button>
         </div>
       </aside>
