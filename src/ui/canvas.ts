@@ -576,6 +576,12 @@ function render() {
     gTransform.appendChild(g);
   }
 
+  // ⚡ Bolt Optimization: Pre-compute comment counts to avoid O(N*C) render loop
+  const commentCounts = new Map<string, number>();
+  for (const c of Object.values(board.comments)) {
+    commentCounts.set(c.nodeId, (commentCounts.get(c.nodeId) || 0) + 1);
+  }
+
   // Nodes (sorted by zIndex)
   const activeNodes = Object.entries(board.nodes)
     .filter(([_, n]) => !n.deleted)
@@ -629,12 +635,7 @@ function render() {
     g.appendChild(foreign);
     
     // Comment badge
-    let totalComments = 0;
-    for (const c of Object.values(board.comments)) {
-      if (c.nodeId === id) {
-        totalComments++;
-      }
-    }
+    const totalComments = commentCounts.get(id) || 0;
     const hasComments = totalComments > 0;
     
     const isOpen = node.commentState === 'OPEN' || (!node.commentState && hasComments);
