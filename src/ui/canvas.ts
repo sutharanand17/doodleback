@@ -871,4 +871,7 @@ function render() {
   if (tempConnectorLine && interactionMode === 'draw-connector') {
     gTransform.appendChild(tempConnectorLine);
   }
+  if (marqueeRect && interactionMode === 'marquee') {
+    gTransform.appendChild(marqueeRect);
+  }
 }
